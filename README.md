@@ -1,25 +1,44 @@
-# BCC sample project folder
+# NHS Health Check Outcomes
 
-This git repository contains a shell that should be used as the default structure for new projects
-in the analytical team.  It won't fit all circumstances perfectly, and you can make changes and issue a 
-pull request for new features / changes.
+This repo includes code to visualise Birmnigham NHS Health Checks data from date1 to date2. The figures produced are listed below.
 
-The aim of this template is two-fold: firstly to give a common structure for analytical projects to aid
-reproducibility, secondly to allow for additional security settings as default to prevent accidental upload of files that should not be committed to Git and GitHub.
+Overall demographics:
+- Age
+- Sex
+- Ethnicity
 
-__Please update/replace this README file with one relevant to your project__
+Outcomes:
+- HbA1c test performed
+  - Eligibility: All patients
 
-## To use this template, please use the following practises:
+- Weight Management Service:
+  - Eligibility: BMI > 23 if (Black and Asian) BMI > 25 if Otherwise
+  - Breakdown: accepted, declined, not given
 
-* Put any data files in the `data` folder.  This folder is explicitly named in the .gitignore file.  A further layer of security is that all xls, xlsx, csv and pdf files are also explicit ignored in the whole folder as well.  ___If you need to commit one of these files, you must use the `-f` (force) command in `commit`, but you must be sure there is no identifiable data.__
-* Save any documentation, images of support files in the `assets` folder.  This does not mean you should avoid commenting your code, but if you have an operating procedure or supporting documents, add them to this folder.
-* Please save all outputs: data, formatted tables, graphs etc. in the output folder.  This is also implicitly ignored by git, but you can use the `-f` (force) command in `commit` to add any you wish to publish to github.
+- Smoking advice given:
+  - Eligibility: smoker (any level)
 
+- Smoking cessation service (Stop smoking or local service)
+  - Eligibility: smoker (any level)
+  - Breakdown: accepted, declined, not given
 
-### Please also consider the following:
-* Linting your code.  This is a formatting process that follows a rule set.  We broadly encourage the tidyverse standard, and recommend the `lintr` package.
-* Comment your code to make sure others can follow.
-* Consider your naming conventions: we recommend `snake case` where spaces are replaced by underscores and no capitals are use. E.g. `outpatient_referral_data`
+- Alcohol advise given
+  - For whole population (no data for eligibility)
 
+- Lifestyle Advice
+  - For whole population (no data for eligibility)
+
+- Exercise program referral: 
+  - For whole population (no data for eligibility)
+
+The breakdown for each outcome to be calculated by:
+- GP
+- Ethnicity
+- Sex
+- Age group
+
+Total graphs = 27 (Demographic overview = 3, Outcomes = 7 x 4  = 31)
+
+### License
 
 This repository is dual licensed under the [Open Government v3]([https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/) & MIT. All code can outputs are subject to Crown Copyright.
