@@ -3,11 +3,13 @@ library(dplyr)
 library(janitor)
 source("R/config.R")
 
+# data file path
 hc_data_path <- file.path(
   path_prefix,
   "TPP AND EMIS FULL REFERRAL 25 26.xlsx"
 )
 
+# Load all sheets and combine
 sheets <- excel_sheets(hc_data_path)
 hc_unprocessed <- data.table::rbindlist(
   lapply(
@@ -20,32 +22,33 @@ hc_unprocessed <- data.table::rbindlist(
   clean_names() %>%
   select(-contains("date")) 
   
-
+# process data
 hc_processed <- hc_unprocessed %>% 
+  # Join ethnicity groups
   left_join(
     read_excel("data/lookups.xlsx", sheet = "ethnicity") %>%
       clean_names(),
-    by = join_by("ethnicity_record" == "ethnicity_raw")
+    by = join_by("ethnicity_record")
   ) %>%
+  # Join smoking status groups
   left_join(
-    read_excel("data/lookups.xlsx", sheet = "broad_ethnicity") %>%
+    read_excel("data/lookups.xlsx", sheet = "smoking") %>%
       clean_names(),
-    by = join_by("ethnic_group")
+    by = join_by("smoking_status_code" == "smoking_status")
   ) %>%
   mutate(
-    broad_ethnicity = case_when(
-      is.na(broad_ethnicity) ~ "Not linked",
-      TRUE ~ broad_ethnicity
-    ),
+    # Convert age to numeric
+    age = as.numeric(age),
+    
     # Extract numeric component of BMI
     bmi_value = as.numeric(
       stringr::str_extract(bmi_value, "\\d+(?:\\.\\d+)?")
       ),
-    # Remove silly values from BMI
+    # Remove improbable values from BMI
     bmi_value = case_when(
-      # Remove BMI's > 80 (n = 66)
+      # Remove BMIs > 80 (n = 66)
       bmi_value > 80 ~ NA,
-      # Remove BMI's < 10 (n = 24)
+      # Remove BMIs < 10 (n = 24)
       bmi_value < 10 ~ NA,
       # Otherwise keep
       TRUE ~ bmi_value
@@ -59,23 +62,97 @@ hc_processed <- hc_unprocessed %>%
       h_ba1c_value < 10 ~ NA,
       # Otherwise keep
       TRUE ~ h_ba1c_value
+    ),
+    
+    # Weight Management Service:
+    #  - Eligibility: BMI > 23 if (Black and Asian) BMI > 25 if Otherwise
+    #  - Breakdown: accepted, declined, not offered, not eligible
+    
+    weight_management_service_eligible = case_when(
+      broad_ethnicity %in% c("Black", "Asian") & bmi_value > 23 ~ TRUE,
+      bmi_value > 25 ~ TRUE,
+      TRUE ~ FALSE
+    ),
+    weight_management_service = case_when(
+      !is.na(referred_to_weight_man_declined_code) ~ "Declined",
+      grepl("Refer", refered_to_weight_man_prog_code) ~ "Accepted",
+      weight_management_service_eligible ~ "Not offered",
+      TRUE ~ "Not eligible"
+    ),
+    
+    # Smoking advice given:
+    #   
+    #   Eligibility: smoker (any level)
+    #   Smoking cessation service (Stop smoking or local service)
+    #   Eligibility: smoker (any level)
+    #   Breakdown: accepted, declined, not offered
+    
+    smoking_advice = case_when(
+      grepl("declined", smoking_cess_advice_code) ~ "Declined",
+      !is.na(smoking_cess_advice_code) ~ "Accepted",
+      smoker == "Yes" ~ "Not offered",
+      smoker == "No" ~ "Not eligible",
+      smoker == "Unknown" ~ "Unknown eligibility",
+      TRUE ~ "Unexpected smoking status"
+    ),
+    
+    # stop smoking service
+    #   
+    #   Eligibility: smoker (any level)
+    #   Smoking cessation service (Stop smoking or local service)
+    #   Eligibility: smoker (any level)
+    #   Breakdown: accepted, declined, not offered
+    
+    smoking_service = case_when(
+      grepl("declined", ref_stop_smoking_service_code) ~ "Declined",
+      !is.na(ref_stop_smoking_service_code) ~ "Accepted",
+      smoker == "Yes" ~ "Not offered",
+      smoker == "No" ~ "Not eligible",
+      smoker == "Unknown" ~ "Unknown eligibility",
+      TRUE ~ "Unexpected smoking status"
+    ),
+    
+    # Alcohol advise given
+    # 
+    #   For whole population (no data for eligibility)
+    
+    alcohol_advice = case_when(
+      !is.na(lifestyle_advice_regarding_alcohol_code) ~ "Accepted",
+      TRUE ~ "Unknown eligibility"
+    ),
+    
+    # Lifestyle Services
+    # 
+    #   For whole population (no data for eligibility)
+    
+    lifestyle_services = case_when(
+      !is.na(referral_to_lifestyle_services_code) ~ "Accepted",
+      TRUE ~ "Unknown eligibility"
+    ),
+    
+    # Exercise program referral:
+    #   
+    #  For whole population (no data for eligibility)
+    exercise_program = case_when(
+      !is.na(ref_exercise_prog_code) ~ "Accepted",
+      TRUE ~ "Unknown eligibility"
     )
+  ) %>%
+  # Reduce data frame to necessary columns
+  select(
+    # GP info
+    gp_name, gp_code, 
+    # Patient demographics
+    sex, age, ethnic_group, broad_ethnicity, 
+    # Recorded values
+    bmi_value, h_ba1c_value,
+    # Health check outcomes
+    weight_management_service, smoking_advice, smoking_service,
+    alcohol_advice, lifestyle_services, exercise_program
   )
 
-## 
-
-
-# eth_lookup <- hc_unprocessed %>%
-#   count(ethnicity_record) %>%
-#   arrange(desc(n)) %>%
-#   left_join(
-#     read_excel("data/lookups.xlsx", sheet = "ethnicity") %>%
-#       clean_names() %>%
-#       left_join(
-#         read_excel("data/lookups.xlsx", sheet = "broad_ethnicity") %>%
-#           clean_names(),
-#         by = join_by("ethnic_group")),
-#     by = join_by("ethnicity_record" == "ethnicity_raw")
-#     )
-# 
-# writexl::write_xlsx(eth_lookup, "ethnicity_lookup.xlsx")
+# Save processed data
+writexl::write_xlsx(
+  hc_processed, 
+  file.path(path_prefix, "processed-hc-data-2526.xlsx")
+  )
