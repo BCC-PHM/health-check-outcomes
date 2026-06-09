@@ -28,7 +28,8 @@ age_plt <- ggplot(hc_processed, aes(x = age, fill = sex)) +
   theme(
     legend.position.inside = TRUE,
     legend.position = c(0.85,0.85),
-    legend.background = element_rect(fill = NA)
+    legend.background = element_rect(fill = NA),
+    plot.title = element_text(size=12)
   ) +
   scale_fill_manual(
     values = c("#84329B","#FFAD00", "#3c3c3b")
@@ -56,7 +57,8 @@ sex_plt <- hc_processed %>%
     title = "Sex of Birmingham NHS Health Check Attendees (25/26)"
   ) +
   theme(
-    legend.position = "none"
+    legend.position = "none",
+    plot.title = element_text(size=12)
   ) +
   scale_fill_manual(
     values = c("#84329B","#FFAD00")
@@ -78,7 +80,8 @@ eth_plt <- ggplot(hc_processed, aes(x = broad_ethnicity, fill = broad_ethnicity)
     title = "Broad Ethnicity of Birmingham NHS Health Check Attendees (25/26)"
   ) +
   theme(
-    legend.position = "none"
+    legend.position = "none",
+    plot.title = element_text(size=12)
   ) +
   scale_fill_manual(
     values = c("#84329B","#D00070", "#DC582A", "#FFAD00", "#00A9E0", "#75BC22")
