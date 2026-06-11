@@ -11,9 +11,12 @@ data_path <- file.path(
 
 hc_processed <- read_excel(
   data_path
-)
+) %>% 
+  filter(
+    gp_name != "Organisation name"
+  )
 
-# Age
+### Age ###
 
 age_plt <- ggplot(hc_processed, aes(x = age, fill = sex)) +
   geom_histogram(binwidth = 5, na.rm=TRUE, color = "black") +
@@ -40,7 +43,15 @@ age_plt
 ggsave("output/demographics/age-hc-2526.png", plot = age_plt,
        width = 6, height = 4)
 
-# Sex
+# make data frame to save
+age_demo <- hc_processed %>%
+  mutate(
+    age_group = cut(age, breaks = seq(40, 75, 5), right = FALSE)
+  ) %>%
+  count(age_group)
+
+
+### Sex ###
 
 sex_plt <- hc_processed %>%
   filter(
@@ -67,6 +78,10 @@ sex_plt
 ggsave("output/demographics/sex-hc-2526.png", plot = sex_plt,
        width = 6, height = 4)
 
+# make data frame to save
+sex_demo <- hc_processed  %>%
+  count(sex)
+
 # Ethnicity
 
 eth_plt <- ggplot(hc_processed, aes(x = broad_ethnicity, fill = broad_ethnicity)) +
@@ -89,3 +104,18 @@ eth_plt <- ggplot(hc_processed, aes(x = broad_ethnicity, fill = broad_ethnicity)
 eth_plt
 ggsave("output/demographics/ethnicity-hc-2526.png", plot = eth_plt,
        width = 6, height = 4)
+
+ethnicity_demo <- hc_processed  %>%
+  count(broad_ethnicity)
+
+### Save demographics data ###
+demo_data_output <- list(
+  "age" = age_demo,
+  "sex" = sex_demo,
+  "ethnicity" = ethnicity_demo
+)
+
+writexl::write_xlsx(
+  demo_data_output,
+  "output/data/hc-demographics-2526.xlsx"
+  )
